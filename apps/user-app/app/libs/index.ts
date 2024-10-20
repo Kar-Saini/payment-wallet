@@ -61,9 +61,9 @@ export const authOptions: AuthOptions = {
   ],
   secret: "mysecret",
   callbacks: {
-    async session({ token, session }: any) {
+    async session({ token, session }) {
       session.user = session.user || {};
-      session.user.id = token.sub;
+      session.user.id = token.sub as string;
       return session;
     },
   },
