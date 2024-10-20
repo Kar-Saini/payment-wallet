@@ -1,7 +1,7 @@
 "use server";
 import prismaClient from "@repo/database/client";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../libs";
+
+import getCurrentUser from "./getCurrentUser";
 
 const createOnRampTransaction = async ({
   amount,
@@ -11,7 +11,7 @@ const createOnRampTransaction = async ({
   provider: string;
 }) => {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getCurrentUser();
     if (!session?.user || !session?.user?.id) {
       return { message: "Unauthenticated request", status: 404 };
     }

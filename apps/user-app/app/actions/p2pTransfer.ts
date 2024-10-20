@@ -1,7 +1,7 @@
 "use server";
 import prismaClient from "@repo/database/client";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../libs";
+import { Prisma } from "@prisma/client";
+import getCurrentUser from "./getCurrentUser";
 
 export async function p2pTransfer({
   amount,
@@ -11,7 +11,7 @@ export async function p2pTransfer({
   phoneNumber: string;
 }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getCurrentUser();
 
     if (!session || !session.user) {
       return { message: "Unauthorized request", status: 400 };
@@ -31,25 +31,27 @@ export async function p2pTransfer({
       return;
     }
 
-    const p2pTransfer = await prismaClient.$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT * FROM "Balance" WHERE "userId"=${session?.user?.id} FOR UPDATE`;
+    const p2pTransfer = await prismaClient.$transaction(
+      async (transaction: Prisma.TransactionClient) => {
+        await transaction.$queryRaw`SELECT * FROM "Balance" WHERE "userId"=${session?.user?.id} FOR UPDATE`;
 
-      const senderBalance = await transaction.balance.findUnique({
-        where: { userId: session?.user?.id },
-      });
-      if (!senderBalance || senderBalance.amount < amount * 100) {
-        return { message: "Insufficient funds", status: 400 };
+        const senderBalance = await transaction.balance.findUnique({
+          where: { userId: session?.user?.id },
+        });
+        if (!senderBalance || senderBalance.amount < amount * 100) {
+          return { message: "Insufficient funds", status: 400 };
+        }
+        await transaction.balance.update({
+          where: { userId: session?.user?.id },
+          data: { amount: { decrement: amount * 100 } },
+        });
+
+        await transaction.balance.update({
+          where: { userId: findUser.id },
+          data: { amount: { increment: amount * 100 } },
+        });
       }
-      await transaction.balance.update({
-        where: { userId: session?.user?.id },
-        data: { amount: { decrement: amount * 100 } },
-      });
-
-      await transaction.balance.update({
-        where: { userId: findUser.id },
-        data: { amount: { increment: amount * 100 } },
-      });
-    });
+    );
     console.log("Hello");
     console.log(p2pTransfer);
     return { message: "P2P transfer success", status: 200 };

@@ -1,9 +1,8 @@
-import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prismaClient from "@repo/database/client";
 import bcrypt from "bcrypt";
 
-export const authOptions: AuthOptions = {
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -19,10 +18,14 @@ export const authOptions: AuthOptions = {
           label: "Password",
         },
       },
-      async authorize(credentials: { phoneNumber: string; password: string }) {
+      async authorize(
+        credentials: Record<"phoneNumber" | "password", string> | undefined
+      ) {
+        if (!credentials) {
+          return null;
+        }
         const { phoneNumber, password } = credentials;
         try {
-          // Check if user exists
           const userExists = await prismaClient.user.findUnique({
             where: { phoneNumber },
           });
