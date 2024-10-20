@@ -1,7 +1,7 @@
 name: Build succeeds on PR
 
 on:
-  pill_request:
+  pull_request:
     branches:
       - master
       - main
